@@ -28,16 +28,16 @@ module Bundler
         source_term = PubGrub::Term.new(source_constraint, true)
 
         dependencies =
-        if version == PubGrub::Package.root_version
-          # It's root! Return our requirements
-          @requirements
-        else
-          specs = @specs_by_name[version.package.name]
-          spec = specs.detect { |s| s.version.to_s == version.name }
-          raise "can't find spec" unless spec
+          if version == PubGrub::Package.root_version
+            # It's root! Return our requirements
+            @requirements
+          else
+            specs = @specs_by_name[version.package.name]
+            spec = specs.detect { |s| s.version.to_s == version.name }
+            raise "can't find spec" unless spec
 
-          spec.dependencies_for_activated_platforms
-        end
+            spec.dependencies_for_activated_platforms
+          end
 
         constraints_for_deps(dependencies).map do |target_constraint|
           target_term = PubGrub::Term.new(target_constraint, false)

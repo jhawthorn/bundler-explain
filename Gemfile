@@ -7,5 +7,5 @@ gemspec
 
 gem 'pub_grub', path: '../pub_grub'
 
-gem 'rails'
+gem 'activesupport', '~> 5.0'
 gem 'quiet_assets'
