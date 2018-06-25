@@ -24,40 +24,74 @@ module Bundler
       end
 
       def incompatibilities_for(version)
-        source_constraint = PubGrub::VersionConstraint.exact(version)
-        source_term = PubGrub::Term.new(source_constraint, true)
+        if version == PubGrub::Package.root_version
+          # It's root! Return our requirements
+          @requirements
 
-        dependencies =
-          if version == PubGrub::Package.root_version
-            # It's root! Return our requirements
-            @requirements
-          else
-            specs = @specs_by_name[version.package.name]
-            spec = specs.detect { |s| s.version.to_s == version.name }
-            raise "can't find spec" unless spec
+          source_constraint = PubGrub::VersionConstraint.exact(version)
+          source_term = PubGrub::Term.new(source_constraint, true)
 
-            spec.dependencies_for_activated_platforms
+          @requirements.map do |dependency|
+            target_constraint = constraint_for_dep(dependency)
+            target_term = PubGrub::Term.new(target_constraint, false)
+
+            PubGrub::Incompatibility.new([source_term, target_term], cause: :dependency)
           end
+        else
+          specs = @specs_by_name[version.package.name]
+          spec = specs.detect { |s| s.version.to_s == version.name }
+          sorted_specs = specs.sort_by(&:version)
+          raise "can't find spec" unless spec
 
-        constraints_for_deps(dependencies).map do |target_constraint|
-          target_term = PubGrub::Term.new(target_constraint, false)
+          dependencies = spec.dependencies_for_activated_platforms
 
-          PubGrub::Incompatibility.new([source_term, target_term], cause: :dependency)
+          dependencies.map do |dependency|
+            target_constraint = constraint_for_dep(dependency)
+            target_term = PubGrub::Term.new(target_constraint, false)
+
+            low = high = sorted_specs.index(spec)
+
+            loop do
+              high += 1
+              break if high >= sorted_specs.length
+              break unless sorted_specs[high].dependencies_for_activated_platforms.include?(dependency)
+            end
+            high -= 1
+
+            loop do
+              low -= 1
+              break if low < 0
+              break unless sorted_specs[low].dependencies_for_activated_platforms.include?(dependency)
+            end
+            low += 1
+
+            if low == high
+              source_constraint = PubGrub::VersionConstraint.exact(version)
+            else
+              package = version.package
+              low_version = sorted_specs[low].version
+              high_version = sorted_specs[high].version
+
+              source_constraint = PubGrub::VersionConstraint.new(package, [">= #{low_version}", "<= #{high_version}"])
+            end
+
+            source_term = PubGrub::Term.new(source_constraint, true)
+
+            PubGrub::Incompatibility.new([source_term, target_term], cause: :dependency)
+          end
         end
       end
 
       private
 
-      def constraints_for_deps(dependencies)
-        dependencies.map do |dep_proxy|
-          dep = dep_proxy.dep
-          package = @package_by_name[dep.name]
+      def constraint_for_dep(dep_proxy)
+        dep = dep_proxy.dep
+        package = @package_by_name[dep.name]
 
-          # This is awful. We should try to reuse Gem::Requirement
-          requirement = dep.requirement.to_s.split(", ")
+        # This is awful. We should try to reuse Gem::Requirement
+        requirement = dep.requirement.to_s.split(", ")
 
-          PubGrub::VersionConstraint.new(package, requirement)
-        end
+        PubGrub::VersionConstraint.new(package, requirement)
       end
 
       def build_resolver
