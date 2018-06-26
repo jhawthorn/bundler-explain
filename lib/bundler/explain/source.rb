@@ -49,21 +49,9 @@ module Bundler
             target_constraint = constraint_for_dep(dependency)
             target_term = PubGrub::Term.new(target_constraint, false)
 
-            low = high = sorted_specs.index(spec)
-
-            loop do
-              high += 1
-              break if high >= sorted_specs.length
-              break unless sorted_specs[high].dependencies_for_activated_platforms.include?(dependency)
+            low, high = range_matching(sorted_specs, sorted_specs.index(spec)) do |near_spec|
+              near_spec.dependencies_for_activated_platforms.include?(dependency)
             end
-            high -= 1
-
-            loop do
-              low -= 1
-              break if low < 0
-              break unless sorted_specs[low].dependencies_for_activated_platforms.include?(dependency)
-            end
-            low += 1
 
             if low == high
               source_constraint = PubGrub::VersionConstraint.exact(version)
@@ -83,6 +71,24 @@ module Bundler
       end
 
       private
+
+      def range_matching(sorted_list, index)
+        low = high = index
+
+        loop do
+          high += 1
+          break if high >= sorted_list.length
+          break unless yield(sorted_list[high])
+        end
+
+        loop do
+          low -= 1
+          break if low < 0
+          break unless yield(sorted_list[low])
+        end
+
+        [low + 1, high - 1]
+      end
 
       def constraint_for_dep(dep_proxy)
         dep = dep_proxy.dep
