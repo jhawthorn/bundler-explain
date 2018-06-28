@@ -24,6 +24,8 @@ module Bundler
       end
 
       def incompatibilities_for(version)
+        package = version.package
+
         if version == PubGrub::Package.root_version
           # It's root! Return our requirements
           @requirements
@@ -53,16 +55,7 @@ module Bundler
               near_spec.dependencies_for_activated_platforms.include?(dependency)
             end
 
-            if low == high
-              source_constraint = PubGrub::VersionConstraint.exact(version)
-            else
-              package = version.package
-              low_version = sorted_specs[low].version
-              high_version = sorted_specs[high].version
-
-              source_constraint = PubGrub::VersionConstraint.new(package, [">= #{low_version}", "<= #{high_version}"])
-            end
-
+            source_constraint = constraint_between_specs(package, sorted_specs[low], sorted_specs[high])
             source_term = PubGrub::Term.new(source_constraint, true)
 
             PubGrub::Incompatibility.new([source_term, target_term], cause: :dependency)
@@ -71,6 +64,17 @@ module Bundler
       end
 
       private
+
+      def constraint_between_specs(package, low_spec, high_spec)
+        low_version = low_spec.version
+        high_version = high_spec.version
+
+        if low_spec == high_spec
+          PubGrub::VersionConstraint.exact(package.version(low_version.to_s))
+        else
+          PubGrub::VersionConstraint.new(package, [">= #{low_version}", "<= #{high_version}"])
+        end
+      end
 
       def range_matching(sorted_list, index)
         low = high = index
