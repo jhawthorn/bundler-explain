@@ -31,9 +31,6 @@ module Bundler
         package = version.package
 
         if version == PubGrub::Package.root_version
-          # It's root! Return our requirements
-          @requirements
-
           source_constraint = PubGrub::VersionConstraint.exact(version)
           source_term = PubGrub::Term.new(source_constraint, true)
 
