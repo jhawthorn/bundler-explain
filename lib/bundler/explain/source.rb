@@ -21,6 +21,10 @@ module Bundler
               end
             end
         end
+
+        @deps_by_spec = Hash.new do |h, s|
+          h[s] = s.dependencies_for_activated_platforms
+        end
       end
 
       def incompatibilities_for(version)
@@ -45,14 +49,14 @@ module Bundler
           sorted_specs = specs.sort_by(&:version)
           raise "can't find spec" unless spec
 
-          dependencies = spec.dependencies_for_activated_platforms
+          dependencies = @deps_by_spec[spec]
 
           dependencies.map do |dependency|
             target_constraint = constraint_for_dep(dependency)
             target_term = PubGrub::Term.new(target_constraint, false)
 
             low, high = range_matching(sorted_specs, sorted_specs.index(spec)) do |near_spec|
-              near_spec.dependencies_for_activated_platforms.include?(dependency)
+              @deps_by_spec[near_spec].include?(dependency)
             end
 
             source_constraint = constraint_between_specs(package, sorted_specs[low], sorted_specs[high])
