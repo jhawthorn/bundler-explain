@@ -46,9 +46,7 @@ module Bundler
           sorted_specs = specs.sort_by(&:version)
           raise "can't find spec" unless spec
 
-          dependencies = @deps_by_spec[spec]
-
-          dependencies.map do |dependency|
+          @deps_by_spec[spec].map do |dependency|
             target_constraint = constraint_for_dep(dependency)
             target_term = PubGrub::Term.new(target_constraint, false)
 
