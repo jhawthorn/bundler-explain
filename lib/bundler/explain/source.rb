@@ -23,7 +23,9 @@ module Bundler
         end
 
         @deps_by_spec = Hash.new do |h, s|
-          h[s] = s.dependencies_for_activated_platforms
+          h[s] = s.dependencies_for_activated_platforms.map do |dep|
+            [dep.name, dep.requirement]
+          end.to_h
         end
       end
 
@@ -35,7 +37,7 @@ module Bundler
           source_term = PubGrub::Term.new(source_constraint, true)
 
           @requirements.map do |dependency|
-            target_constraint = constraint_for_dep(dependency)
+            target_constraint = constraint_for_dep(dependency.name, dependency.dep.requirement)
             target_term = PubGrub::Term.new(target_constraint, false)
 
             PubGrub::Incompatibility.new([source_term, target_term], cause: :dependency)
@@ -46,12 +48,12 @@ module Bundler
           sorted_specs = specs.sort_by(&:version)
           raise "can't find spec" unless spec
 
-          @deps_by_spec[spec].map do |dependency|
-            target_constraint = constraint_for_dep(dependency)
+          @deps_by_spec[spec].map do |dep_name, dep_requirement|
+            target_constraint = constraint_for_dep(dep_name, dep_requirement)
             target_term = PubGrub::Term.new(target_constraint, false)
 
             low, high = range_matching(sorted_specs, sorted_specs.index(spec)) do |near_spec|
-              @deps_by_spec[near_spec].include?(dependency)
+              @deps_by_spec[near_spec][dep_name] == dep_requirement
             end
 
             source_constraint = constraint_between_specs(package, sorted_specs[low], sorted_specs[high])
@@ -93,12 +95,11 @@ module Bundler
         [low + 1, high - 1]
       end
 
-      def constraint_for_dep(dep_proxy)
-        dep = dep_proxy.dep
-        package = @package_by_name[dep.name]
+      def constraint_for_dep(name, requirement)
+        package = @package_by_name[name]
 
         # This is awful. We should try to reuse Gem::Requirement
-        requirement = dep.requirement.to_s.split(", ")
+        requirement = requirement.to_s.split(", ")
 
         PubGrub::VersionConstraint.new(package, requirement)
       end
