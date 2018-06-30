@@ -58,14 +58,18 @@ module Bundler
               @deps_by_spec[near_spec][dep_name] == dep_requirement
             end
 
-            target_term = PubGrub::Term.new(target_constraint, false)
-            source_term = PubGrub::Term.new(source_constraint, true)
-            PubGrub::Incompatibility.new([source_term, target_term], cause: :dependency)
+            dependency_incompatiblity(source_constraint, target_constraint)
           end
         end
       end
 
       private
+
+      def dependency_incompatiblity(source_constraint, target_constraint)
+        source_term = PubGrub::Term.new(source_constraint, true)
+        target_term = PubGrub::Term.new(target_constraint, false)
+        PubGrub::Incompatibility.new([source_term, target_term], cause: :dependency)
+      end
 
       def range_constraint(spec, &block)
         sorted_specs = @sorted_specs_by_name[spec.name]
