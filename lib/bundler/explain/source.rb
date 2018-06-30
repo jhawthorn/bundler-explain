@@ -34,31 +34,33 @@ module Bundler
       end
 
       def incompatibilities_for(version)
+        return enum_for(__method__, version) unless block_given?
+
         package = version.package
 
         if version == PubGrub::Package.root_version
           source_constraint = PubGrub::VersionConstraint.exact(version)
           source_term = PubGrub::Term.new(source_constraint, true)
 
-          @requirements.map do |dependency|
+          @requirements.each do |dependency|
             target_constraint = constraint_for_dep(dependency.name, dependency.dep.requirement)
             target_term = PubGrub::Term.new(target_constraint, false)
 
-            PubGrub::Incompatibility.new([source_term, target_term], cause: :dependency)
+            yield PubGrub::Incompatibility.new([source_term, target_term], cause: :dependency)
           end
         else
           specs = @specs_by_name[version.package.name]
           spec = specs.detect { |s| s.version.to_s == version.name }
           raise "can't find spec" unless spec
 
-          @deps_by_spec[spec].map do |dep_name, dep_requirement|
+          @deps_by_spec[spec].each do |dep_name, dep_requirement|
             target_constraint = constraint_for_dep(dep_name, dep_requirement)
 
             source_constraint = range_constraint(spec) do |near_spec|
               @deps_by_spec[near_spec][dep_name] == dep_requirement
             end
 
-            dependency_incompatiblity(source_constraint, target_constraint)
+            yield dependency_incompatiblity(source_constraint, target_constraint)
           end
         end
       end
