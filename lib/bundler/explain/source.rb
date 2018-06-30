@@ -13,6 +13,10 @@ module Bundler
           @resolver.search_for(Bundler::DepProxy.new(Gem::Dependency.new(name), platform)).reverse
         end
 
+        @sorted_specs_by_name = Hash.new do |h, name|
+          h[name] = @specs_by_name[name].sort_by(&:version)
+        end
+
         @package_by_name = Hash.new do |h, name|
           h[name] =
             PubGrub::Package.new(name) do |package|
@@ -45,26 +49,31 @@ module Bundler
         else
           specs = @specs_by_name[version.package.name]
           spec = specs.detect { |s| s.version.to_s == version.name }
-          sorted_specs = specs.sort_by(&:version)
           raise "can't find spec" unless spec
 
           @deps_by_spec[spec].map do |dep_name, dep_requirement|
             target_constraint = constraint_for_dep(dep_name, dep_requirement)
-            target_term = PubGrub::Term.new(target_constraint, false)
 
-            low, high = range_matching(sorted_specs, sorted_specs.index(spec)) do |near_spec|
+            source_constraint = range_constraint(spec) do |near_spec|
               @deps_by_spec[near_spec][dep_name] == dep_requirement
             end
 
-            source_constraint = constraint_between_specs(package, sorted_specs[low], sorted_specs[high])
+            target_term = PubGrub::Term.new(target_constraint, false)
             source_term = PubGrub::Term.new(source_constraint, true)
-
             PubGrub::Incompatibility.new([source_term, target_term], cause: :dependency)
           end
         end
       end
 
       private
+
+      def range_constraint(spec, &block)
+        sorted_specs = @sorted_specs_by_name[spec.name]
+        package = @package_by_name[spec.name]
+
+        low, high = range_matching(sorted_specs, sorted_specs.index(spec), &block)
+        constraint_between_specs(package, sorted_specs[low], sorted_specs[high])
+      end
 
       def constraint_between_specs(package, low_spec, high_spec)
         low_version = low_spec.version
