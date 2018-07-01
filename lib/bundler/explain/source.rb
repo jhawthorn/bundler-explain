@@ -54,18 +54,50 @@ module Bundler
           raise "can't find spec" unless spec
 
           @deps_by_spec[spec].each do |dep_name, dep_requirement|
+            # Default case
             target_constraint = constraint_for_dep(dep_name, dep_requirement)
-
             source_constraint = range_constraint(spec) do |near_spec|
               @deps_by_spec[near_spec][dep_name] == dep_requirement
             end
-
             yield dependency_incompatiblity(source_constraint, target_constraint)
+
+            # Special case: exact dependencies (like rails 5.0.7 requires)
+            # We want to add an extra loosened (semver-like) dependency in
+            # addition to the exact dependency above.
+            if dep_requirement.exact?
+              dep_version = dep_requirement.requirements[0][1]
+              if dep_version == spec.version
+                derived_requirements(dep_version).each do |new_requirement|
+                  next unless new_requirement === dep_version
+
+                  target_constraint = constraint_for_dep(dep_name, new_requirement)
+                  source_constraint = range_constraint(spec) do |near_spec|
+                    near_dep = @deps_by_spec[near_spec][dep_name]
+
+                    near_dep && near_dep.exact? && new_requirement === near_dep.requirements[0][1]
+                  end
+
+                  yield dependency_incompatiblity(source_constraint, target_constraint)
+                end
+              end
+            end
           end
         end
       end
 
       private
+
+      def derived_requirements(original_version)
+        return enum_for(__method__, original_version) unless block_given?
+
+        v = original_version
+        s = original_version.segments
+
+        yield Gem::Requirement.new(">= #{s[0]}.#{s[1]}.a", "< #{v.release}")
+        yield Gem::Requirement.new(["~> #{s[0]}.#{s[1]}.0"])
+        yield Gem::Requirement.new(["~> #{s[0]}.#{s[1]}.0.a"])
+        yield Gem::Requirement.new(["~> #{s[0]}.0.a"])
+      end
 
       def dependency_incompatiblity(source_constraint, target_constraint)
         source_term = PubGrub::Term.new(source_constraint, true)
@@ -94,6 +126,8 @@ module Bundler
 
       def range_matching(sorted_list, index)
         low = high = index
+
+        raise "range_matching started at non-matching index" unless yield(sorted_list[index])
 
         loop do
           high += 1
