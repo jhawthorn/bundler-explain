@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["john@hawthorn.email"]
 
   spec.summary       = %q{Explains bundle update conflicts}
-  spec.description   = %q{Uses pub_grub to give a better explanation for why a bundle update has a conflict}
+  spec.description   = %q{Gives better explanations of conflicts when running bundle update.}
   spec.homepage      = "https://github.com/jhawthorn/bundler-explain"
   spec.license       = "MIT"
 

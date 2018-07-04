@@ -1,8 +1,54 @@
-# Bundler::Explain
+# bundler-explain
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/bundler/explain`. To experiment with that code, run `bin/console` for an interactive prompt.
+This project aims to give better explanations conflicts on bundle install.
 
-TODO: Delete this and the text above, and describe your gem
+Consider this Gemfile:
+
+```
+gem 'rails', '~> 5.0.0'
+gem 'quiet_assets'
+```
+
+Running bundle update we get this error:
+
+```
+Bundler could not find compatible versions for gem "rails":
+  In Gemfile:
+    rails (~> 5.0.0)
+
+Could not find gem 'rails (~> 5.0.0)' in any of the sources.
+
+Bundler could not find compatible versions for gem "railties":
+  In Gemfile:
+    quiet_assets was resolved to 1.0.1, which depends on
+      railties (~> 3.1)
+
+    rails (~> 5.0.0) was resolved to 5.0.0, which depends on
+      railties (= 5.0.0)
+```
+
+bundler has tried every version of `quiet_assets` and `rails`, and found that
+none are compatible. However it's a little unclear from this.
+
+Bundler can only report one of the many failed combinations it has tried (here
+`rails 5.0.0` and `quiet_assets 1.0.1`, neither of which the most recent
+version).
+
+bundler-explain aims to show the user why there are no possible solutions:
+
+```
+Because quiet_assets 1.0.1 depends on railties ~> 3.1
+  and quiet_assets <= 1.0.0 depends on rails ~> 3.1,
+  quiet_assets <= 1.0.0 OR 1.0.1 requires railties ~> 3.1 or rails ~> 3.1.
+And because quiet_assets >= 1.0.2 depends on railties < 5.0, >= 3.1,
+  either railties < 5.0, >= 3.1 or rails ~> 3.1.
+So, because rails >= 5.0.0, <= 5.0.7 depends on railties ~> 5.0.0
+  and root depends on rails ~> 5.0.0,
+  version solving has failed.
+```
+
+bundler-explain uses [PubGrub](https://github.com/jhawthorn/pub_grub) to
+determine the cause of the failure.
 
 ## Installation
 
