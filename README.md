@@ -53,25 +53,35 @@ only describe relevant gems. [See a more complex example](https://gist.github.co
 bundler-explain uses [PubGrub](https://github.com/jhawthorn/pub_grub) to
 determine the cause of the failure.
 
-## Installation
+## Installation and Usage
 
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'bundler-explain'
+```
+$ bundler plugin install bundler-explain
 ```
 
-And then execute:
+This will install the `bundler-explain` plugin and `bundle update` will now use
+bundler-explain's error messages.
 
-    $ bundle
+```
+$ bundle update
+Fetching gem metadata from https://rubygems.org/..........
+Fetching gem metadata from https://rubygems.org/.
+Resolving dependencies....
+Bundler could not find compatible versions of all gems.
 
-Or install it yourself as:
+This explanation comes from bundler-explain, please report any issues to
+https://github.com/jhawthorn/bundler-explain/issues
 
-    $ gem install bundler-explain
+Because quiet_assets 1.0.1 depends on railties ~> 3.1
+  and quiet_assets <= 1.0.0 depends on rails ~> 3.1,
+  quiet_assets <= 1.0.0 OR 1.0.1 requires railties ~> 3.1 or rails ~> 3.1.
+And because quiet_assets >= 1.0.2 depends on railties < 5.0, >= 3.1,
+  either railties < 5.0, >= 3.1 or rails ~> 3.1.
+So, because rails >= 5.0.0, <= 5.0.7 depends on railties ~> 5.0.0
+  and root depends on rails ~> 5.0.0,
+  version solving has failed.
+```
 
-## Usage
-
-TODO: Write usage instructions here
 
 ## Development
 
