@@ -1,3 +1,5 @@
+require 'pub_grub'
+
 module Bundler
   module Explain
     class Source
