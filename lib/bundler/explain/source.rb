@@ -1,13 +1,10 @@
 module Bundler
   module Explain
     class Source
-      def initialize
+      def initialize(requirements:, platform:, resolver:)
         @definition = Bundler.definition(true)
-        @requirements = @definition.send(:expanded_dependencies)
-        build_resolver
-
-        # This is probably wrong
-        platform = @definition.platforms.first
+        @requirements = requirements
+        @resolver = resolver
 
         @specs_by_name = Hash.new do |h, name|
           @resolver.search_for(Bundler::DepProxy.new(Gem::Dependency.new(name), platform)).reverse
@@ -161,27 +158,6 @@ module Bundler
         requirement = requirement.to_s.split(", ")
 
         PubGrub::VersionConstraint.new(package, requirement)
-      end
-
-      def build_resolver
-        # awful, horrible hacks
-        @resolver = @definition.instance_eval do
-          @remote = true
-          sources.remote!
-
-          platforms = Set.new(platforms)
-          base = Bundler::SpecSet.new([])
-          Bundler::Resolver.new(index, source_requirements, base, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
-        end
-
-        requirements = @requirements
-        # Because we don't #start, we need to hack some things in
-        @resolver.instance_eval do
-          @prerelease_specified = {}
-          requirements.each {|dep| @prerelease_specified[dep.name] ||= dep.prerelease? }
-
-          verify_gemfile_dependencies_are_found!(requirements)
-        end
       end
     end
   end
