@@ -47,6 +47,9 @@ So, because rails >= 5.0.0, <= 5.0.7 depends on railties ~> 5.0.0
   version solving has failed.
 ```
 
+With more gems, bundler's output will be more verbose but bundler-explain will
+only describe relevant gems. [See a more complex example](https://gist.github.com/jhawthorn/480dab06ade950161d3bd0db0018538e).
+
 bundler-explain uses [PubGrub](https://github.com/jhawthorn/pub_grub) to
 determine the cause of the failure.
 
