@@ -110,17 +110,21 @@ module Bundler
         package = @package_by_name[spec.name]
 
         low, high = range_matching(sorted_specs, sorted_specs.index(spec), &block)
-        constraint_between_specs(package, sorted_specs[low], sorted_specs[high])
+        constraint_between_specs(package, low && sorted_specs[low], high && sorted_specs[high])
       end
 
       def constraint_between_specs(package, low_spec, high_spec)
-        low_version = low_spec.version
-        high_version = high_spec.version
+        low_version = low_spec && low_spec.version
+        high_version = high_spec && high_spec.version
 
-        if low_spec == high_spec
+        if !low_spec && !high_spec
+          PubGrub::VersionConstraint.any(package)
+        elsif low_spec == high_spec
           PubGrub::VersionConstraint.exact(package.version(low_version.to_s))
         else
-          PubGrub::VersionConstraint.new(package, [">= #{low_version}", "<= #{high_version}"])
+          low = ">= #{low_version}" if low_spec
+          high = "<= #{high_version}" if high_spec
+          PubGrub::VersionConstraint.new(package, [low, high].compact)
         end
       end
 
@@ -131,17 +135,23 @@ module Bundler
 
         loop do
           high += 1
-          break if high >= sorted_list.length
+          if high >= sorted_list.length
+            high = nil
+            break
+          end
           break unless yield(sorted_list[high])
         end
 
         loop do
           low -= 1
-          break if low < 0
+          if low < 0
+            low = nil
+            break
+          end
           break unless yield(sorted_list[low])
         end
 
-        [low + 1, high - 1]
+        [low && low + 1, high && high - 1]
       end
 
       def constraint_for_dep(name, requirement)
