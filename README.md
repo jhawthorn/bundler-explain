@@ -56,6 +56,7 @@ determine the cause of the failure.
 ## Installation and Usage
 
 ```
+$ gem i pub_grub # Needs to be installed first
 $ bundler plugin install bundler-explain
 ```
 
