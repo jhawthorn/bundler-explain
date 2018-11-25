@@ -125,7 +125,7 @@ module Bundler
         else
           low = ">= #{low_version}" if low_spec
           high = "<= #{high_version}" if high_spec
-          PubGrub::VersionConstraint.new(package, [low, high].compact)
+          PubGrub::VersionConstraint.parse(package, [low, high].compact)
         end
       end
 
@@ -161,7 +161,7 @@ module Bundler
         # This is awful. We should try to reuse Gem::Requirement
         requirement = requirement.to_s.split(", ")
 
-        PubGrub::VersionConstraint.new(package, requirement)
+        PubGrub::VersionConstraint.parse(package, requirement)
       end
     end
   end
