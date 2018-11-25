@@ -1,8 +1,6 @@
-$LOAD_PATH.unshift "./lib"
+$LOAD_PATH.unshift "#{__dir__}/lib"
 require 'bundler/explain'
 require 'pub_grub'
-
-ENV['DEBUG'] = 'true'
 
 Bundler.ui = Bundler::UI::Shell.new
 PubGrub.logger.level = Logger::DEBUG
