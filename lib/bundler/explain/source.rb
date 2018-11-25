@@ -124,7 +124,7 @@ module Bundler
           PubGrub::VersionConstraint.exact(package.version(low_version.to_s))
         else
           low = ">= #{low_version}" if low_spec
-          high = "<= #{high_version}" if high_spec
+          high = "< #{high_version}" if high_spec
           PubGrub::VersionConstraint.parse(package, [low, high].compact)
         end
       end
@@ -152,7 +152,7 @@ module Bundler
           break unless yield(sorted_list[low])
         end
 
-        [low && low + 1, high && high - 1]
+        [low && low + 1, high]
       end
 
       def constraint_for_dep(name, requirement)
