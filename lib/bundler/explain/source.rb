@@ -92,7 +92,7 @@ module Bundler
         v = original_version
         s = original_version.segments
 
-        return [] unless s.length == 3
+        return [] unless s.length >= 3
 
         yield Gem::Requirement.new(">= #{s[0]}.#{s[1]}.a", "< #{v.release}")
         yield Gem::Requirement.new(["~> #{s[0]}.#{s[1]}.0"])
