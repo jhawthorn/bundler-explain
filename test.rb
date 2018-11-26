@@ -2,6 +2,7 @@ $LOAD_PATH.unshift "#{__dir__}/lib"
 $LOAD_PATH.unshift "#{__dir__}/../pub_grub/lib"
 require 'bundler/explain'
 require 'pub_grub'
+require 'pub_grub/rubygems'
 
 Bundler.ui = Bundler::UI::Shell.new
 PubGrub.logger.level = Logger::DEBUG

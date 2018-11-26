@@ -130,9 +130,8 @@ module Bundler
         elsif low_spec == high_spec
           PubGrub::VersionConstraint.exact(package, low_version)
         else
-          low = ">= #{low_version}" if low_spec
-          high = "< #{high_version}" if high_spec
-          PubGrub::VersionConstraint.parse(package, [low, high].compact)
+          range = PubGrub::VersionRange.new(min: low_version, max: high_version, include_min: true)
+          PubGrub::VersionConstraint.new(package, range: range)
         end
       end
 
@@ -165,10 +164,7 @@ module Bundler
       def constraint_for_dep(name, requirement)
         package = @package_by_name[name]
 
-        # This is awful. We should try to reuse Gem::Requirement
-        requirement = requirement.to_s.split(", ")
-
-        PubGrub::VersionConstraint.parse(package, requirement)
+        PubGrub::RubyGems.requirement_to_constraint(package, requirement)
       end
     end
   end
