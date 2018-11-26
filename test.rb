@@ -1,4 +1,5 @@
 $LOAD_PATH.unshift "#{__dir__}/lib"
+$LOAD_PATH.unshift "#{__dir__}/../pub_grub/lib"
 require 'bundler/explain'
 require 'pub_grub'
 

@@ -17,12 +17,7 @@ module Bundler
         end
 
         @package_by_name = Hash.new do |h, name|
-          h[name] =
-            PubGrub::Package.new(name) do |package|
-              @specs_by_name[name].each do |spec_group|
-                package.add_version spec_group.version.to_s
-              end
-            end
+          h[name] = PubGrub::Package.new(name)
         end
 
         @deps_by_spec = Hash.new do |h, s|
@@ -32,13 +27,25 @@ module Bundler
         end
       end
 
-      def incompatibilities_for(version)
-        return enum_for(__method__, version) unless block_given?
+      def root_package
+        PubGrub::Package.root
+      end
 
-        package = version.package
+      def versions_for(package, range)
+        return [PubGrub::Package.root_version] if package == root_package
 
-        if version == PubGrub::Package.root_version
-          source_constraint = PubGrub::VersionConstraint.exact(version)
+        @specs_by_name[package.name].map do |spec_group|
+          spec_group.version
+        end.select do |version|
+          range.include?(version)
+        end
+      end
+
+      def incompatibilities_for(package, version)
+        return enum_for(__method__, package, version) unless block_given?
+
+        if package == root_package
+          source_constraint = PubGrub::VersionConstraint.exact(package, version)
           source_term = PubGrub::Term.new(source_constraint, true)
 
           @requirements.each do |dependency|
@@ -48,8 +55,8 @@ module Bundler
             yield PubGrub::Incompatibility.new([source_term, target_term], cause: :dependency)
           end
         else
-          specs = @specs_by_name[version.package.name]
-          spec = specs.detect { |s| s.version.to_s == version.name }
+          specs = @specs_by_name[package.name]
+          spec = specs.detect { |s| s.version == version }
           raise "can't find spec" unless spec
 
           @deps_by_spec[spec].each do |dep_name, dep_requirement|
@@ -121,7 +128,7 @@ module Bundler
         if !low_spec && !high_spec
           PubGrub::VersionConstraint.any(package)
         elsif low_spec == high_spec
-          PubGrub::VersionConstraint.exact(package.version(low_version.to_s))
+          PubGrub::VersionConstraint.exact(package, low_version)
         else
           low = ">= #{low_version}" if low_spec
           high = "< #{high_version}" if high_spec
